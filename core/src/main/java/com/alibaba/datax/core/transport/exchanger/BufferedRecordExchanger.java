@@ -90,14 +90,15 @@ public class BufferedRecordExchanger implements RecordSender, RecordReceiver {
 			return;
 		}
 
-		boolean isFull = (this.bufferIndex >= this.bufferSize || this.memoryBytes.get() + record.getMemorySize() > this.byteCapacity);
-		if (isFull) {
-			flush();
-		}
 
 		this.buffer.add(record);
 		this.bufferIndex++;
 		memoryBytes.addAndGet(record.getMemorySize());
+
+        boolean isFull = (this.bufferIndex >= this.bufferSize || this.memoryBytes.get() + record.getMemorySize() > this.byteCapacity);
+        if (isFull) {
+            flush();
+        }
 	}
 
 	@Override

@@ -1,0 +1,66 @@
+{
+  "job": {
+    "content": [
+      {
+        "reader": {
+          "name": "mysqlreader",
+          "parameter": {
+            "username": "root",
+            "password": "123456",
+            "column": [
+              "`id`",
+              "`hello1222`",
+              "`11`",
+              "`datetime`",
+              "`timestamp`",
+              "`decimal`",
+              "`date`"
+            ],
+            "splitPk": "",
+            "connection": [
+              {
+                "table": [
+                  "zzzz_11"
+                ],
+                "jdbcUrl": [
+                  "jdbc:mysql://192.168.1.111:3306/dataxweb?serverTimezone=Asia/Shanghai&useLegacyDatetimeCode=false&useSSL=false&useUnicode=true&characterEncoding=UTF-8"
+                ]
+              }
+            ]
+          }
+        },
+        "writer": {
+          "name": "mysqlwriter",
+          "parameter": {
+            "username": "root",
+            "password": "123456",
+            "column": [
+              "`id`",
+              "`hello1222`",
+              "`11`",
+              "`datetime`",
+              "`timestamp`",
+              "`decimal`",
+              "`date`"
+            ],
+            "batchSize":"1",
+            "connection": [
+              {
+                "table": [
+                  "zzzz_222"
+                ],
+                "jdbcUrl": "jdbc:mysql://192.168.1.111:3306/dataxweb?serverTimezone=Asia/Shanghai&useLegacyDatetimeCode=false&useSSL=false&useUnicode=true&characterEncoding=UTF-8"
+
+              }
+            ]
+          }
+        }
+      }
+    ],
+    "setting": {
+      "speed": {
+        "channel": 1
+      }
+    }
+  }
+}

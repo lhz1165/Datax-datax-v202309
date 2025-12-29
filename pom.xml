@@ -27,7 +27,7 @@
         <diamond.version>3.7.2.1-SNAPSHOT</diamond.version>
 
         <!--slf4j 1.7.10 和 logback-classic 1.0.13 是好基友 -->
-        <slf4j-api-version>1.7.10</slf4j-api-version>
+        <slf4j-api-version>1.7.36</slf4j-api-version>
         <logback-classic-version>1.0.13</logback-classic-version>
         <commons-io-version>2.4</commons-io-version>
         <junit-version>4.13.1</junit-version>
@@ -38,7 +38,8 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
         <maven.compiler.encoding>UTF-8</maven.compiler.encoding>
-        <mysql.driver.version>5.1.47</mysql.driver.version>
+<!--        <mysql.driver.version>5.1.47</mysql.driver.version>-->
+        <mysql.driver.version>8.0.28</mysql.driver.version>
     </properties>
 
     <modules>
@@ -54,7 +55,7 @@
         <module>kingbaseesreader</module>
         <module>oraclereader</module>
         <module>cassandrareader</module>
-        <module>oceanbasev10reader</module>
+<!--        <module>oceanbasev10reader</module>-->
         <module>rdbmsreader</module>
 
         <module>odpsreader</module>
@@ -91,7 +92,7 @@
         <module>postgresqlwriter</module>
         <module>kingbaseeswriter</module>
         <module>adswriter</module>
-        <module>oceanbasev10writer</module>
+<!--        <module>oceanbasev10writer</module>-->
         <module>adbpgwriter</module>
         <module>hologresjdbcwriter</module>
         <module>rdbmswriter</module>
@@ -132,6 +133,7 @@
         <module>gaussdbreader</module>
         <module>gaussdbwriter</module>
         <module>datax-example</module>
+        <module>mysqldebeziumreader</module>
 
     </modules>
 
@@ -273,6 +275,7 @@
         <plugins>
             <plugin>
                 <artifactId>maven-assembly-plugin</artifactId>
+<!--                <version>2.2-beta-3</version>-->
                 <configuration>
                     <finalName>datax</finalName>
                     <descriptors>

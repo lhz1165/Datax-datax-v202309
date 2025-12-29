@@ -33,12 +33,13 @@
             },
             "exchanger": {
                 "class": "com.alibaba.datax.core.plugin.BufferedRecordExchanger",
-                "bufferSize": 32
+                "bufferSize": 1
             }
         },
         "container": {
             "job": {
-                "reportInterval": 10000
+              "reportInterval": 20000,
+              "sleepInterval":10000
             },
             "taskGroup": {
                 "channel": 5

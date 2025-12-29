@@ -10,18 +10,17 @@ import com.alibaba.datax.plugin.rdbms.util.DBUtil;
 import com.alibaba.datax.plugin.rdbms.util.DBUtilErrorCode;
 import com.alibaba.datax.plugin.rdbms.util.DataBaseType;
 import com.alibaba.datax.plugin.rdbms.util.RdbmsException;
+import com.alibaba.datax.plugin.rdbms.util.DebezimuSqlUtil;
 import com.alibaba.datax.plugin.rdbms.writer.util.OriginalConfPretreatmentUtil;
 import com.alibaba.datax.plugin.rdbms.writer.util.WriterUtil;
+
+import java.sql.*;
 import java.util.concurrent.atomic.AtomicLong;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.Triple;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.SQLException;
-import java.sql.Types;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -348,17 +347,45 @@ public class CommonRdbmsWriter {
         protected void doBatchInsert(Connection connection, List<Record> buffer)
                 throws SQLException {
             PreparedStatement preparedStatement = null;
+
+            Statement debeziumStmt = connection.createStatement();
+            int debeziumCount = 0;
+            int addCount = 0;
+
             try {
                 connection.setAutoCommit(false);
                 preparedStatement = connection
                         .prepareStatement(this.writeRecordSql);
 
                 for (Record record : buffer) {
+
+                    // Debezium 的 UPDATE / DELETE
+                    if (record.getMeta() != null) {
+                        String op = record.getMeta().get("debezimuop");
+                        if ("1".equals(op) || "2".equals(op)) {
+                            // 根据Record的列构造update 或 delete语句
+                            String sql = DebezimuSqlUtil.buildSql(this.table, this.resultSetMetaData, op,
+                                    record, this.dataBaseType, this.emptyAsNull);
+                            if (sql != null && !sql.isEmpty()) {
+                                debeziumStmt.addBatch(sql);
+                                debeziumCount++;
+                            }
+                        }
+                        continue;
+                    }
+
                     preparedStatement = fillPreparedStatement(
                             preparedStatement, record);
                     preparedStatement.addBatch();
+                    addCount++;
                 }
-                preparedStatement.executeBatch();
+
+                if (debeziumCount > 0) {
+                    debeziumStmt.executeBatch();
+                }
+                if(addCount > 0) {
+                    preparedStatement.executeBatch();
+                }
                 connection.commit();
             } catch (SQLException e) {
                 LOG.warn("回滚此次写入, 采用每次写入一行方式提交. 因为:" + e.getMessage());

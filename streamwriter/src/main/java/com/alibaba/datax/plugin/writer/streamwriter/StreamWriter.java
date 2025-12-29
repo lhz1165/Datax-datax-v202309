@@ -159,6 +159,7 @@ public class StreamWriter extends Writer {
                         while ((record = recordReceiver.getFromReader()) != null) {
                             if (this.print) {
                                 writer.write(recordToString(record));
+                                writer.flush();
                             } else {
                         /* do nothing */
                             }
