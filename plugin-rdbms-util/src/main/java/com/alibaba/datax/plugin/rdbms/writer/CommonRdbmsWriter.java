@@ -369,6 +369,7 @@ public class CommonRdbmsWriter {
                             if (sql != null && !sql.isEmpty()) {
                                 debeziumStmt.addBatch(sql);
                                 debeziumCount++;
+                                LOG.info("[Debezium DB 增量修改]sql:{} ",sql);
                             }
                         }
                         continue;

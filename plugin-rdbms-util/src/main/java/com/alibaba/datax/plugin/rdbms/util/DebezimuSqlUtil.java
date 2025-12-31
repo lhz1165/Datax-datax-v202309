@@ -330,7 +330,7 @@ public class DebezimuSqlUtil {
         if (clean == null) {
             return null;
         }
-        return "`" + clean + "`";
+        return clean ;
     }
 
     /**

@@ -12,7 +12,9 @@ import org.junit.Test;
 public class StreamReader2StreamWriterTest {
     @Test
     public void testStreamReader2StreamWriter() {
-        String path = "/mysqldebezumi2stream5.json";
+        //String path = "/mysql2pg/mysql2pg.json";
+        String path = "/pg2mysql/pg2mysql.json";
+        //String path = "/mysqldebezumi2stream4.json";
         String jobPath = PathUtil.getAbsolutePathFromClassPath(path);
         ExampleContainer.start(jobPath);
     }

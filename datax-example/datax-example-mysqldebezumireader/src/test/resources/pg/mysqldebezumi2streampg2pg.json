@@ -1,0 +1,47 @@
+{
+  "job": {
+    "content": [
+      {
+        "reader": {
+          "name": "postgresqldebeziumreader",
+          "parameter": {
+            "username": "app_user",
+            "password": "123456",
+            "column": [
+              "id",
+              "name",
+              "date1",
+              "time1",
+              "timetz1",
+              "timestamp1",
+              "timestamptz1"
+            ],
+            "splitPk": "",
+            "connection": [
+              {
+                "table": [
+                  "public.zzz_1"
+                ],
+                "jdbcUrl": [
+                  "jdbc:postgresql://192.168.1.111:5432/app_user"
+                ]
+              }
+            ]
+          }
+        },
+        "writer": {
+          "name": "streamwriter",
+          "parameter": {
+            "encoding": "UTF-8",
+            "print": true
+          }
+        }
+      }
+    ],
+    "setting": {
+      "speed": {
+        "channel": 1
+      }
+    }
+  }
+}

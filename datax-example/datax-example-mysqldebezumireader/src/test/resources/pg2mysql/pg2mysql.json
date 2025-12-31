@@ -1,0 +1,68 @@
+{
+  "job": {
+    "content": [
+      {
+        "reader": {
+          "name": "postgresqldebeziumreader",
+          "parameter": {
+            "jobId": "123456",
+            "slotName": "datax_slot_1",
+            "username": "app_user",
+            "password": "123456",
+            "column": [
+              "\"id\"",
+              "\"name\"",
+              "\"date1\"",
+              "\"time1\"",
+              "\"timetz1\"",
+              "\"timestamp1\"",
+              "\"timestamptz1\""
+            ],
+            "splitPk": "",
+            "connection": [
+              {
+                "table": [
+                  "public.zzz_3"
+                ],
+                "jdbcUrl": [
+                  "jdbc:postgresql://192.168.1.111:5432/app_user"
+                ]
+              }
+            ]
+          }
+        },
+        "writer": {
+          "name": "mysqlwriter",
+          "parameter": {
+            "username": "root",
+            "password": "123456",
+            "column": [
+              "`id`",
+              "`name`",
+              "`date1`",
+              "`time1`",
+              "`timetz1`",
+              "`timestamp1`",
+              "`timestamptz1`"
+            ],
+            "batchSize":"1",
+            "connection": [
+              {
+                "table": [
+                  "zzz_3"
+                ],
+                "jdbcUrl": "jdbc:mysql://192.168.1.111:3306/dataxweb?serverTimezone=Asia/Shanghai&useLegacyDatetimeCode=false&useSSL=false&useUnicode=true&characterEncoding=UTF-8"
+
+              }
+            ]
+          }
+        }
+      }
+    ],
+    "setting": {
+      "speed": {
+        "channel": 1
+      }
+    }
+  }
+}

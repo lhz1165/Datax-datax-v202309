@@ -55,4 +55,7 @@ public final class Key {
     public final static String REUSE_CONN = "reuseConn";
 
     public final static String PARTITION_NAME = "partitionName";
+
+    public final static String JOB_ID = "jobId";
+    public final static String SLOT_NAME = "slotName";
 }

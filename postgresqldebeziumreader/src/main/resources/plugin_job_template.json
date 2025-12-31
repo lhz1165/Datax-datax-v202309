@@ -1,14 +1,15 @@
 {
-    "name": "mysqldebeziumreader",
+    "name": "postgresqldebeziumreader",
     "parameter": {
-        "jobId": "",
         "username": "",
         "password": "",
+        "jobId": "",
+        "slotName": "",
         "column": [],
         "connection": [
             {
-            "jdbcUrl": [],
-            "table": []
+                "table": [],
+                "jdbcUrl": []
             }
         ],
         "where": ""

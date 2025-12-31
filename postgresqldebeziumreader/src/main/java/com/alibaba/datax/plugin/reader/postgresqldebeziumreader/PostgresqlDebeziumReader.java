@@ -1,4 +1,4 @@
-package com.alibaba.datax.plugin.reader.mysqldebeziumreader;
+package com.alibaba.datax.plugin.reader.postgresqldebeziumreader;
 
 import ch.qos.logback.classic.Level;
 import com.alibaba.datax.common.constant.CommonConstant;
@@ -42,10 +42,10 @@ import java.util.concurrent.ThreadLocalRandom;
 
 import org.apache.commons.lang3.tuple.Triple;
 
-public class MysqlDebeziumReader extends Reader {
+public class PostgresqlDebeziumReader extends Reader {
 
 
-    private static final DataBaseType DATABASE_TYPE = DataBaseType.MySql;
+    private static final DataBaseType DATABASE_TYPE = DataBaseType.PostgreSQL;
 
     public static class Job extends Reader.Job {
 
@@ -84,9 +84,8 @@ public class MysqlDebeziumReader extends Reader {
 
 
             //2. 设置table
-            // 对每一个connection 上配置的table 项进行解析(已对表名称进行了 ` 处理的)
+            // 对每一个connection 上配置的table 项进行解析(已对表名称进行了 " 处理的)
             List<String> tables = connConf.getList(Key.TABLE, String.class);
-            List<String> toTables = connConf.getList("toTable", String.class);
             List<String> expandedTables = TableExpandUtil.expandTableConf(DATABASE_TYPE, tables);
             if (expandedTables.isEmpty()) {
                 throw DataXException.asDataXException(
@@ -119,7 +118,7 @@ public class MysqlDebeziumReader extends Reader {
                             tableName);
                     LOG.info("table:[{}] has columns:[{}].",
                             tableName, StringUtils.join(allColumns, ","));
-                    // warn:注意mysql表名区分大小写
+                    // warn:注意PostgreSQL表名区分大小写，但通常使用小写
                     allColumns = ListUtil.valueToLowerCase(allColumns);
                     List<String> quotedColumns = new ArrayList<String>();
 
@@ -181,7 +180,7 @@ public class MysqlDebeziumReader extends Reader {
                 sliceConfig.remove(Constant.CONN_MARK);
                 Configuration tempSlice;
 
-                // 已在之前进行了扩展和`处理，可以直接使用
+                // 已在之前进行了扩展和"处理，可以直接使用
                 List<String> tables = connConf.getList(Key.TABLE, String.class);
 
                 Validate.isTrue(null != tables && !tables.isEmpty(), "您读取数据库表配置错误.");
@@ -245,13 +244,15 @@ public class MysqlDebeziumReader extends Reader {
         private Configuration writerSliceConfig;
         private String username;
         private String password;
-        private String jobId;
         private String jdbcUrl;
         private String basicMsg;
         private String table;
-        private String toTable;
         private JdbcUrlParser.JdbcInfo jdbcInfo;
         private static final boolean IS_DEBUG = LOG.isDebugEnabled();
+        private String jobId;
+        private String slotName;
+
+
 
         // 用于实时同步的控制变量
         private EmbeddedEngine engine;
@@ -267,13 +268,14 @@ public class MysqlDebeziumReader extends Reader {
         public void init() {
             this.readerSliceConfig = super.getPluginJobConf();
             this.username = readerSliceConfig.getString(Key.USERNAME);
-            this.jobId = readerSliceConfig.getString(Key.JOB_ID);
             this.password = readerSliceConfig.getString(Key.PASSWORD);
             this.jdbcUrl = readerSliceConfig.getString(Key.JDBC_URL);
             this.table = readerSliceConfig.getString(Key.TABLE);
-            this.toTable = readerSliceConfig.getString("toTable");
+            this.jobId = readerSliceConfig.getString(Key.JOB_ID);
+            this.slotName = readerSliceConfig.getString(Key.SLOT_NAME);
+            this.table = readerSliceConfig.getString(Key.TABLE);
 
-            this.jdbcInfo = JdbcUrlParser.parseMysqlJdbcUrl(jdbcUrl);
+            this.jdbcInfo = JdbcUrlParser.parsePostgresqlJdbcUrl(jdbcUrl);
 
             basicMsg = String.format("jdbcUrl:[%s]", this.jdbcUrl);
 
@@ -341,54 +343,69 @@ public class MysqlDebeziumReader extends Reader {
             ch.qos.logback.classic.Logger kafkaLogger = (ch.qos.logback.classic.Logger) LoggerFactory.getLogger("org.apache.kafka");
             kafkaLogger.setLevel(Level.WARN);
 
-//            Logger debeziumLogger = LoggerFactory.getLogger("io.debezium");
-//            Logger kafkaLogger = LoggerFactory.getLogger("org.apache.kafka");
             // 1. 配置 Debezium
-            //String idStr = ThreadLocalRandom.current().nextInt(1000, 10001) + "";
-            String idStr = jobId;
+            // PostgreSQL 逻辑复制槽名称，需要唯一
+            //String slotName = "datax_slot_" + ThreadLocalRandom.current().nextInt(1000, 10001);
+            //String slotName = "datax_slot_1";
+            //String idStr = jobId;;
 
-            if (StringUtils.isBlank(jobId) ) {
-                LOG.info("[Debezium] jobId未指定jobId = {}启动失败",jobId);
+            // 解析表名（可能是 schema.table 格式）
+//            String schemaName = jdbcInfo.schema;
+//            String tableName = table;
+//            if (table.contains(".")) {
+//                String[] parts = table.split("\\.");
+//                if (parts.length == 2) {
+//                    schemaName = parts[0];
+//                    tableName = parts[1];
+//                }
+//            }
+
+            if (StringUtils.isBlank(jobId) || StringUtils.isBlank(slotName)) {
+                LOG.info("[Debezium] jobId或者slotName未指定jobId = {},slotName = {} 启动失败",jobId,slotName);
                 return;
             }
-            LOG.info("[Debezium] jobId = {} ",jobId);
-            io.debezium.config.Configuration config = io.debezium.config.Configuration.create()
-                    .with("name", "mysql-batch-connector")
-                    .with("connector.class", "io.debezium.connector.mysql.MySqlConnector")
 
-                    // MySQL 连接
+            LOG.info("[Debezium]启动 jobId = {},slotName = {} ",jobId,slotName);
+            io.debezium.config.Configuration config = io.debezium.config.Configuration.create()
+                    .with("name", "postgresql-batch-connector")
+                    .with("connector.class", "io.debezium.connector.postgresql.PostgresConnector")
+
+                    // PostgreSQL 连接
                     .with("database.hostname", jdbcInfo.host)
                     .with("database.port", jdbcInfo.port)
                     .with("database.user", username)
                     .with("database.password", password)
-//                    .with("database.serverTimezone", "Asia/Shanghai")
-//                    .with("time.precision.mode", "connect")
+                    .with("database.dbname", jdbcInfo.database)
 
                     // Server 信息
-                    .with("database.server.id", idStr)
-                    .with("database.server.name", "mysql-server" + "-" + idStr)
+                    .with("database.server.id", "10181")
+                    .with("database.server.name", "postgresql-server-" + jobId)
+                    .with("publication.autocreate.mode", "filtered")
 
                     // 监听范围
-                    .with("database.include.list", jdbcInfo.database)
-                    .with("table.include.list", jdbcInfo.database + "." + table)
+                    //.with("schema.include.list", schemaName)
+                    //.with("table.include.list", schemaName + "." + tableName)
+                    .with("table.include.list", table)
+
+                    // PostgreSQL 逻辑复制配置
+                    .with("slot.name", slotName)
+                    .with("plugin.name", "pgoutput")  // 使用 pgoutput
+                    .with("snapshot.mode", "initial")
 
                     // offset
                     .with("offset.storage", "org.apache.kafka.connect.storage.FileOffsetBackingStore")
-                    .with("offset.storage.file.filename", "./mysql/" + idStr + "offsets.dat")
+                    .with("offset.storage.file.filename", "./pg/" + jobId + "offsets.dat")
                     .with("offset.flush.interval.ms", "1000")
 
                     // schema history
-//                    .with("database.history", "io.debezium.relational.history.FileDatabaseHistory")
-//                    .with("database.history.file.filename", "./mysql/" + idStr + "dbhistory.dat")
                     .with("database.history", "io.debezium.relational.history.MemoryDatabaseHistory")
 
-                    .with("snapshot.mode", "when_needed")
 
                     .with("tombstones.on.delete", "false")
                     .build();
 
 
-
+            System.out.println(config.toString());
 
             this.engine = EmbeddedEngine.create()
                     .using(config)
@@ -426,7 +443,7 @@ public class MysqlDebeziumReader extends Reader {
 
 
                                 // 业务处理
-                                processEvent(table,toTable, op.code(), before, after, recordSender, pluginCollector,
+                                processEvent(table, op.code(), before, after, recordSender, pluginCollector,
                                         configuredColumns, columnJdbcTypes);
 
                                 // 标记本条已处理
@@ -484,7 +501,6 @@ public class MysqlDebeziumReader extends Reader {
         /// 把处理对象发送给channel
         private void processEvent(
                 String table,
-                String totable,
                 String op,
                 Struct before,
                 Struct after,
@@ -499,6 +515,7 @@ public class MysqlDebeziumReader extends Reader {
                 case "c":
                     payload = after;
                     record = JdbcUtil.buildRecord(recordSender,payload,configuredColumns, pluginCollector, columnJdbcTypes);
+                    break;
                 case "r":
                     break;
                 // update 使用最新的 after
@@ -526,87 +543,6 @@ public class MysqlDebeziumReader extends Reader {
                 LOG.info("Processing record SKIPPED");
             }
         }
-
-
-        /**
-         * 参考 CommonRdbmsReader.buildRecord，将 Debezium Struct 转为 DataX Record。
-         * 只处理配置中指定的列，并按照 JDBC 类型进行转换。
-         */
-//        private Record structToRecord(Struct struct, RecordSender recordSender,
-//                                      TaskPluginCollector pluginCollector,
-//                                      List<String> configuredColumns,
-//                                      Map<String, Integer> columnJdbcTypes,
-//                                      Map<String, String> columnTypeNames, int type) {
-//            if (struct == null || struct.schema() == null) {
-//                return null;
-//            }
-//
-//            //设置操作类型
-//            Record record = recordSender.createRecord();
-//
-//            Map<String, String> meta = record.getMeta();
-//            if (meta == null) {
-//                record.setMeta(new HashMap<>());
-//                record.getMeta().put("op", String.valueOf(type));
-//            } else {
-//                record.getMeta().put("op", String.valueOf(type));
-//            }
-//
-//
-//            // 如果没有配置列，使用所有字段
-//            if (configuredColumns == null || configuredColumns.isEmpty()) {
-//                LOG.warn("No column configuration found, will use all fields from struct");
-//                configuredColumns = new ArrayList<>();
-//                for (Field field : struct.schema().fields()) {
-//                    configuredColumns.add(field.name());
-//                }
-//            }
-//
-//            try {
-//                // 按照配置的列顺序处理
-//                for (String columnName : configuredColumns) {
-//                    // 去掉列名中的反引号（如果存在）
-//                    String cleanColumnName = columnName;
-//                    if (cleanColumnName != null && cleanColumnName.startsWith("`") && cleanColumnName.endsWith("`")) {
-//                        cleanColumnName = cleanColumnName.substring(1, cleanColumnName.length() - 1);
-//                    }
-//                    Field field = struct.schema().field(cleanColumnName);
-//                    if (field == null) {
-//                        // 列不存在，添加null值
-//                        LOG.warn("Column [{}] not found in struct, adding null", columnName);
-//                        record.addColumn(new StringColumn(null));
-//                        continue;
-//                    }
-//
-//                    Object value = struct.get(field);
-//                    String fieldName = field.name();
-//
-//                    // 优先使用 JDBC 类型，如果没有则使用 Debezium Schema Type
-//                    Integer jdbcType = columnJdbcTypes.get(fieldName.toLowerCase());
-//                    String typeName = columnTypeNames != null ? columnTypeNames.get(fieldName.toLowerCase()) : null;
-//
-//
-//
-//                    // 根据 JDBC 类型构建 Column（参考 CommonRdbmsReader.buildRecord）
-//                    if (jdbcType != null) {
-//                        String stringValue = JdbcUtil.formatStructFieldToStringValue(value, field.schema());
-//                        record.addColumn(buildColumnByJdbcType(stringValue, jdbcType, typeName, fieldName));
-//                    }else {
-//                        record.addColumn(null);
-//                    }
-//                }
-//            } catch (Exception e) {
-//                if (IS_DEBUG) {
-//                    LOG.debug("read data " + record.toString() + " occur exception:", e);
-//                }
-//                pluginCollector.collectDirtyRecord(record, e);
-//                if (e instanceof DataXException) {
-//                    throw (DataXException) e;
-//                }
-//            }
-//
-//            return record;
-//        }
 
 
 
