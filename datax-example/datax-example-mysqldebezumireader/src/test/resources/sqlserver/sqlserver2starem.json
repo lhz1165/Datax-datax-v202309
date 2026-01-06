@@ -3,23 +3,23 @@
     "content": [
       {
         "reader": {
-          "name": "mysqldebeziumreader",
+          "name": "sqlserverdebeziumreader",
           "parameter": {
-            "jobId": "1314",
-            "username": "root",
-            "password": "123456",
+            "jobId": "13140",
+            "username": "sa",
+            "password": "SqlServer@123",
             "column": [
-              "`id`",
-              "`hello1222`"
+              "id",
+              "name"
             ],
             "splitPk": "",
             "connection": [
               {
                 "table": [
-                  "zzzz_11"
+                  "dbo.test_table"
                 ],
                 "jdbcUrl": [
-                  "jdbc:mysql://192.168.1.111:3306/dataxweb?serverTimezone=Asia/Shanghai&useLegacyDatetimeCode=false&useSSL=false&useUnicode=true&characterEncoding=UTF-8"
+                  "jdbc:sqlserver://localhost:1433;databaseName=test"
                 ]
               }
             ]

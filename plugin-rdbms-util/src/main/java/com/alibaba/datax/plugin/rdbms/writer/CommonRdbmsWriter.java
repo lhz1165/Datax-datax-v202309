@@ -273,6 +273,7 @@ public class CommonRdbmsWriter {
 
             List<Record> writeBuffer = new ArrayList<Record>(this.batchSize);
             int bufferBytes = 0;
+            LOG.info("[Writer] batchSize:{}",batchSize);
             try {
                 Record record;
                 while ((record = recordReceiver.getFromReader()) != null) {
@@ -286,7 +287,7 @@ public class CommonRdbmsWriter {
                                                 record.getColumnNumber(),
                                                 this.columnNumber));
                     }
-
+                    LOG.info("[Writer]Record:{},add writeBuffer",record);
                     writeBuffer.add(record);
                     bufferBytes += record.getMemorySize();
 

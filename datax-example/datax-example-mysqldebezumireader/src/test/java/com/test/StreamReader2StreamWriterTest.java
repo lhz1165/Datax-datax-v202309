@@ -13,8 +13,10 @@ public class StreamReader2StreamWriterTest {
     @Test
     public void testStreamReader2StreamWriter() {
         //String path = "/mysql2pg/mysql2pg.json";
-        String path = "/pg2mysql/pg2mysql.json";
-        //String path = "/mysqldebezumi2stream4.json";
+        //String path = "/mysql2pg/datax-web.json";
+//        String path = "/mysqldebezumi2stream.json";
+        //String path = "/gaussdb.json";
+        String path = "/sqlserver/sqlserver2starem.json";
         String jobPath = PathUtil.getAbsolutePathFromClassPath(path);
         ExampleContainer.start(jobPath);
     }

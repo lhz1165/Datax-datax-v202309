@@ -28,6 +28,7 @@ import org.apache.kafka.connect.source.SourceRecord;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.File;
 import java.sql.Connection;
 import java.sql.Types;
 import java.time.ZoneOffset;
@@ -345,15 +346,28 @@ public class MysqlDebeziumReader extends Reader {
 //            Logger kafkaLogger = LoggerFactory.getLogger("org.apache.kafka");
             // 1. 配置 Debezium
             //String idStr = ThreadLocalRandom.current().nextInt(1000, 10001) + "";
-            String idStr = jobId;
 
             if (StringUtils.isBlank(jobId) ) {
                 LOG.info("[Debezium] jobId未指定jobId = {}启动失败",jobId);
                 return;
             }
             LOG.info("[Debezium] jobId = {} ",jobId);
+
+            File pgDir = new File("./mysql");
+            if (!pgDir.exists()) {
+                boolean created = pgDir.mkdirs();
+                if (created) {
+                    LOG.info("Created directory: ./mysql/");
+                } else {
+                    LOG.warn("Failed to create directory: ./mysql/, will try to continue anyway");
+                }
+            } else {
+                LOG.debug("Directory ./mysql/ already exists");
+            }
+
+
             io.debezium.config.Configuration config = io.debezium.config.Configuration.create()
-                    .with("name", "mysql-batch-connector")
+                    .with("name", "mysql-batch-connector-"+jobId)
                     .with("connector.class", "io.debezium.connector.mysql.MySqlConnector")
 
                     // MySQL 连接
@@ -365,8 +379,8 @@ public class MysqlDebeziumReader extends Reader {
 //                    .with("time.precision.mode", "connect")
 
                     // Server 信息
-                    .with("database.server.id", idStr)
-                    .with("database.server.name", "mysql-server" + "-" + idStr)
+                    .with("database.server.id", jobId)
+                    .with("database.server.name", "mysql-server" + "-" + jobId)
 
                     // 监听范围
                     .with("database.include.list", jdbcInfo.database)
@@ -374,13 +388,13 @@ public class MysqlDebeziumReader extends Reader {
 
                     // offset
                     .with("offset.storage", "org.apache.kafka.connect.storage.FileOffsetBackingStore")
-                    .with("offset.storage.file.filename", "./mysql/" + idStr + "offsets.dat")
+                    .with("offset.storage.file.filename", "./mysql/" + jobId + "offsets.dat")
                     .with("offset.flush.interval.ms", "1000")
 
                     // schema history
-//                    .with("database.history", "io.debezium.relational.history.FileDatabaseHistory")
-//                    .with("database.history.file.filename", "./mysql/" + idStr + "dbhistory.dat")
-                    .with("database.history", "io.debezium.relational.history.MemoryDatabaseHistory")
+                    .with("database.history", "io.debezium.relational.history.FileDatabaseHistory")
+                    .with("database.history.file.filename", "./mysql/" + jobId + "dbhistory.dat")
+                    //.with("database.history", "io.debezium.relational.history.MemoryDatabaseHistory")
 
                     .with("snapshot.mode", "when_needed")
 
@@ -518,7 +532,7 @@ public class MysqlDebeziumReader extends Reader {
                     break;
             }
             if (payload != null) {
-                LOG.info("Processing record: " + record);
+                LOG.info("Processing {} record: {}",record , op);
                 if (record != null) {
                     recordSender.sendToWriter(record);
                 }

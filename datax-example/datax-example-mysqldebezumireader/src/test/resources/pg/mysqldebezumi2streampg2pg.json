@@ -5,22 +5,18 @@
         "reader": {
           "name": "postgresqldebeziumreader",
           "parameter": {
+            "jobId": "66",
+            "slotName": "datax_slot_1",
             "username": "app_user",
             "password": "123456",
             "column": [
-              "id",
-              "name",
-              "date1",
-              "time1",
-              "timetz1",
-              "timestamp1",
-              "timestamptz1"
+              "id"
             ],
             "splitPk": "",
             "connection": [
               {
                 "table": [
-                  "public.zzz_1"
+                  "public.zzz_3"
                 ],
                 "jdbcUrl": [
                   "jdbc:postgresql://192.168.1.111:5432/app_user"

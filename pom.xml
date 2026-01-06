@@ -69,8 +69,8 @@
 
 <!--        <module>ossreader</module>-->
 <!--        <module>hdfsreader</module>-->
-<!--        <module>ftpreader</module>-->
-<!--        <module>txtfilereader</module>-->
+        <module>ftpreader</module>
+        <module>txtfilereader</module>
         <module>streamreader</module>
 <!--        <module>clickhousereader</module>-->
 
@@ -107,9 +107,9 @@
 <!--        <module>hbase11xsqlwriter</module>-->
 <!--        <module>hbase20xsqlwriter</module>-->
 <!--        <module>kuduwriter</module>-->
-<!--        <module>ftpwriter</module>-->
+        <module>ftpwriter</module>
 <!--        <module>hdfswriter</module>-->
-<!--        <module>txtfilewriter</module>-->
+        <module>txtfilewriter</module>
         <module>streamwriter</module>
 
 <!--        <module>elasticsearchwriter</module>-->
@@ -131,11 +131,12 @@
         <!-- common support module -->
         <module>plugin-rdbms-util</module>
         <module>plugin-unstructured-storage-util</module>
-        <module>gaussdbreader</module>
-        <module>gaussdbwriter</module>
+<!--        <module>gaussdbreader</module>-->
+<!--        <module>gaussdbwriter</module>-->
         <module>datax-example</module>
         <module>mysqldebeziumreader</module>
         <module>postgresqldebeziumreader</module>
+        <module>sqlserverdebeziumreader</module>
 
     </modules>
 

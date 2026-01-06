@@ -3,28 +3,27 @@
     "setting": {
       "speed": {
         "channel": 1
+      },
+      "errorLimit": {
+        "record": 0,
+        "percentage": 0.02
       }
-    },
-    "errorLimit": {
-      "record": 0,
-      "percentage": 0.02
     },
     "content": [
       {
         "reader": {
           "name": "mysqldebeziumreader",
           "parameter": {
-            "jobId": "987654",
             "username": "root",
             "password": "123456",
             "column": [
-              "id",
-              "name",
-              "date1",
-              "time1",
-              "timetz1",
-              "timestamp1",
-              "timestamptz1"
+              "`id`",
+              "`name`",
+              "`date1`",
+              "`time1`",
+              "`timetz1`",
+              "`timestamp1`",
+              "`timestamptz1`"
             ],
             "splitPk": "",
             "connection": [
@@ -36,7 +35,8 @@
                   "jdbc:mysql://192.168.1.111:3306/dataxweb?serverTimezone=Asia/Shanghai&useLegacyDatetimeCode=false&useSSL=false&useUnicode=true&characterEncoding=UTF-8"
                 ]
               }
-            ]
+            ],
+            "jobId": "28"
           }
         },
         "writer": {
@@ -46,12 +46,12 @@
             "password": "123456",
             "column": [
               "\"id\"",
-              "name",
-              "date1",
-              "time1",
-              "timetz1",
-              "timestamp1",
-              "timestamptz1"
+              "\"name\"",
+              "\"date1\"",
+              "\"time1\"",
+              "\"timetz1\"",
+              "\"timestamp1\"",
+              "\"timestamptz1\""
             ],
             "batchSize": "1",
             "connection": [

@@ -12,54 +12,56 @@
     "content": [
       {
         "reader": {
-          "name": "mysqldebeziumreader",
+          "name": "mysqlreader",
           "parameter": {
-            "jobId": "987654",
             "username": "root",
             "password": "123456",
             "column": [
               "id",
+              "isbn",
               "name",
-              "date1",
-              "time1",
-              "timetz1",
-              "timestamp1",
-              "timestamptz1"
+              "price",
+              "author",
+              "publisher",
+              "create_time",
+              "status",
+              "borrownum"
             ],
             "splitPk": "",
             "connection": [
               {
                 "table": [
-                  "zzz_4"
+                  "book"
                 ],
                 "jdbcUrl": [
-                  "jdbc:mysql://192.168.1.111:3306/dataxweb?serverTimezone=Asia/Shanghai&useLegacyDatetimeCode=false&useSSL=false&useUnicode=true&characterEncoding=UTF-8"
+                  "jdbc:mysql://localhost:3306/springboot-vue?serverTimezone=Asia/Shanghai&useLegacyDatetimeCode=false&useSSL=false&useUnicode=true&characterEncoding=UTF-8"
                 ]
               }
             ]
           }
         },
         "writer": {
-          "name": "postgresqlwriter",
+          "name": "gaussdbwriter",
           "parameter": {
             "username": "app_user",
-            "password": "123456",
+            "password": "Secretpassword@123",
             "column": [
-              "\"id\"",
+              "id",
+              "isbn",
               "name",
-              "date1",
-              "time1",
-              "timetz1",
-              "timestamp1",
-              "timestamptz1"
+              "price",
+              "author",
+              "publisher",
+              "create_time",
+              "status",
+              "borrownum"
             ],
-            "batchSize": "1",
             "connection": [
               {
+                "jdbcUrl": "jdbc:opengauss://localhost:15432/springbootvue",
                 "table": [
-                  "public.zzz_4"
-                ],
-                "jdbcUrl": "jdbc:postgresql://192.168.1.111:5432/app_user"
+                  "public.book"
+                ]
               }
             ]
           }

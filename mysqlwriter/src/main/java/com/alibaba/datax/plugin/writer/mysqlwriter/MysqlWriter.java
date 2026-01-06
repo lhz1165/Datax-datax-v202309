@@ -5,7 +5,10 @@ import com.alibaba.datax.common.spi.Writer;
 import com.alibaba.datax.common.util.Configuration;
 import com.alibaba.datax.plugin.rdbms.util.DataBaseType;
 import com.alibaba.datax.plugin.rdbms.writer.CommonRdbmsWriter;
+import com.alibaba.datax.plugin.rdbms.writer.Constant;
 import com.alibaba.datax.plugin.rdbms.writer.Key;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.List;
 
@@ -58,6 +61,7 @@ public class MysqlWriter extends Writer {
     }
 
     public static class Task extends Writer.Task {
+        protected static final Logger LOG = LoggerFactory.getLogger(MysqlWriter.Task.class);
         private Configuration writerSliceConfig;
         private CommonRdbmsWriter.Task commonRdbmsWriterTask;
 
@@ -75,6 +79,9 @@ public class MysqlWriter extends Writer {
 
         //TODO 改用连接池，确保每次获取的连接都是可用的（注意：连接可能需要每次都初始化其 session）
         public void startWrite(RecordReceiver recordReceiver) {
+            LOG.info("[MysqlWriter] record receiver");
+            int batchSize = writerSliceConfig.getInt(Key.BATCH_SIZE, Constant.DEFAULT_BATCH_SIZE);
+            LOG.info("[MysqlWriter] batch size:" + batchSize);
             this.commonRdbmsWriterTask.startWrite(recordReceiver, this.writerSliceConfig,
                     super.getTaskPluginCollector());
         }

@@ -1,0 +1,45 @@
+{
+  "setting": {},
+  "job": {
+    "setting": {
+      "speed": {
+        "channel": 2
+      }
+    },
+    "content": [
+      {
+        "reader": {
+          "name": "txtfilereader",
+          "parameter": {
+            "path": ["D:/gitproject/DataX-datax_v202309/datax-example/datax-example-mysqldebezumireader/src/test/resources/txt/from.txt"],
+            "encoding": "UTF-8",
+            "column": [
+              {
+                "index": 0,
+                "type": "string"
+              },
+
+              {
+                "index": 1,
+                "type": "long"
+              },
+              {
+                "index": 2,
+                "type": "date",
+                "format": "yyyy-MM-dd"
+              }
+            ],
+            "fieldDelimiter": ","
+          }
+        },
+        "writer": {
+          "name": "streamwriter",
+          "parameter": {
+            "encoding": "UTF-8",
+            "print": true
+          }
+        }
+      }
+    ]
+  }
+}

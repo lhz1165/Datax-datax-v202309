@@ -2,5 +2,5 @@
     "name": "postgresqldebeziumreader",
     "class": "com.alibaba.datax.plugin.reader.postgresqldebeziumreader.PostgresqlDebeziumReader",
     "description": "useScene: prod. mechanism: Jdbc connection using the database, execute select sql, retrieve data from the ResultSet. warn: The more you know about the database, the less problems you encounter.",
-    "developer": "alibaba"
+    "developer": "laihz"
 }

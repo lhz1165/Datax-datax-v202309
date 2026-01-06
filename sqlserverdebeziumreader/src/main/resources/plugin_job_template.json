@@ -1,0 +1,16 @@
+{
+  "name": "sqlserverdebeziumreader",
+  "parameter": {
+    "username": "",
+    "password": "",
+    "jobId": "",
+    "column": [],
+    "connection": [
+      {
+        "table": [],
+        "jdbcUrl": []
+      }
+    ],
+    "where": ""
+  }
+}

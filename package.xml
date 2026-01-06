@@ -40,6 +40,15 @@
             </includes>
             <outputDirectory>datax</outputDirectory>
         </fileSet>
+
+        <fileSet>
+            <directory>sqlserverdebeziumreader/target/datax/</directory>
+            <includes>
+                <include>**/*.*</include>
+            </includes>
+            <outputDirectory>datax</outputDirectory>
+        </fileSet>
+
         <fileSet>
             <directory>mysqlreader/target/datax/</directory>
             <includes>
@@ -118,13 +127,13 @@
 <!--            </includes>-->
 <!--            <outputDirectory>datax</outputDirectory>-->
 <!--        </fileSet>-->
-<!--        <fileSet>-->
-<!--            <directory>txtfilereader/target/datax/</directory>-->
-<!--            <includes>-->
-<!--                <include>**/*.*</include>-->
-<!--            </includes>-->
-<!--            <outputDirectory>datax</outputDirectory>-->
-<!--        </fileSet>-->
+        <fileSet>
+            <directory>txtfilereader/target/datax/</directory>
+            <includes>
+                <include>**/*.*</include>
+            </includes>
+            <outputDirectory>datax</outputDirectory>
+        </fileSet>
 <!--        <fileSet>-->
 <!--            <directory>ossreader/target/datax/</directory>-->
 <!--            <includes>-->
@@ -295,20 +304,20 @@
 <!--            </includes>-->
 <!--            <outputDirectory>datax</outputDirectory>-->
 <!--        </fileSet>-->
-<!--        <fileSet>-->
-<!--            <directory>txtfilewriter/target/datax/</directory>-->
-<!--            <includes>-->
-<!--                <include>**/*.*</include>-->
-<!--            </includes>-->
-<!--            <outputDirectory>datax</outputDirectory>-->
-<!--        </fileSet>-->
-<!--        <fileSet>-->
-<!--            <directory>ftpwriter/target/datax/</directory>-->
-<!--            <includes>-->
-<!--                <include>**/*.*</include>-->
-<!--            </includes>-->
-<!--            <outputDirectory>datax</outputDirectory>-->
-<!--        </fileSet>-->
+        <fileSet>
+            <directory>txtfilewriter/target/datax/</directory>
+            <includes>
+                <include>**/*.*</include>
+            </includes>
+            <outputDirectory>datax</outputDirectory>
+        </fileSet>
+        <fileSet>
+            <directory>ftpwriter/target/datax/</directory>
+            <includes>
+                <include>**/*.*</include>
+            </includes>
+            <outputDirectory>datax</outputDirectory>
+        </fileSet>
 <!--        <fileSet>-->
 <!--            <directory>osswriter/target/datax/</directory>-->
 <!--            <includes>-->
@@ -521,6 +530,21 @@
 <!--        </fileSet>-->
 <!--        <fileSet>-->
 <!--            <directory>neo4jwriter/target/datax/</directory>-->
+<!--            <includes>-->
+<!--                <include>**/*.*</include>-->
+<!--            </includes>-->
+<!--            <outputDirectory>datax</outputDirectory>-->
+<!--        </fileSet>-->
+
+<!--        <fileSet>-->
+<!--            <directory>gaussdbwriter/target/datax/</directory>-->
+<!--            <includes>-->
+<!--                <include>**/*.*</include>-->
+<!--            </includes>-->
+<!--            <outputDirectory>datax</outputDirectory>-->
+<!--        </fileSet>-->
+<!--        <fileSet>-->
+<!--            <directory>gaussdbreader/target/datax/</directory>-->
 <!--            <includes>-->
 <!--                <include>**/*.*</include>-->
 <!--            </includes>-->

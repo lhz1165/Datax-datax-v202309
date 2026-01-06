@@ -1,8 +1,8 @@
-package com.alibaba.datax.plugin.reader.postgresqldebeziumreader;
+package com.alibaba.datax.plugin.reader.sqlserverdebeziumreader;
 
 import ch.qos.logback.classic.Level;
 import com.alibaba.datax.common.constant.CommonConstant;
-import com.alibaba.datax.common.element.*;
+import com.alibaba.datax.common.element.Record;
 import com.alibaba.datax.common.exception.DataXException;
 import com.alibaba.datax.common.plugin.RecordSender;
 import com.alibaba.datax.common.plugin.TaskPluginCollector;
@@ -21,8 +21,7 @@ import io.debezium.data.Envelope;
 import io.debezium.embedded.EmbeddedEngine;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.Validate;
-import org.apache.kafka.connect.data.Field;
-import org.apache.kafka.connect.data.Schema;
+import org.apache.commons.lang3.tuple.Triple;
 import org.apache.kafka.connect.data.Struct;
 import org.apache.kafka.connect.source.SourceRecord;
 import org.slf4j.Logger;
@@ -30,23 +29,15 @@ import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.sql.Connection;
-import java.sql.Types;
-import java.time.ZoneOffset;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ThreadLocalRandom;
 
-import org.apache.commons.lang3.tuple.Triple;
+public class SqlServerDebeziumReader extends Reader {
 
-public class PostgresqlDebeziumReader extends Reader {
-
-
-    private static final DataBaseType DATABASE_TYPE = DataBaseType.PostgreSQL;
+    private static final DataBaseType DATABASE_TYPE = DataBaseType.SQLServer;
 
     public static class Job extends Reader.Job {
 
@@ -251,7 +242,6 @@ public class PostgresqlDebeziumReader extends Reader {
         private JdbcUrlParser.JdbcInfo jdbcInfo;
         private static final boolean IS_DEBUG = LOG.isDebugEnabled();
         private String jobId;
-        private String slotName;
 
 
 
@@ -273,10 +263,9 @@ public class PostgresqlDebeziumReader extends Reader {
             this.jdbcUrl = readerSliceConfig.getString(Key.JDBC_URL);
             this.table = readerSliceConfig.getString(Key.TABLE);
             this.jobId = readerSliceConfig.getString(Key.JOB_ID);
-            this.slotName = readerSliceConfig.getString(Key.SLOT_NAME);
             this.table = readerSliceConfig.getString(Key.TABLE);
 
-            this.jdbcInfo = JdbcUrlParser.parsePostgresqlJdbcUrl(jdbcUrl);
+            this.jdbcInfo = JdbcUrlParser.parseSqlServerJdbcUrl(jdbcUrl);
 
             basicMsg = String.format("jdbcUrl:[%s]", this.jdbcUrl);
 
@@ -344,83 +333,65 @@ public class PostgresqlDebeziumReader extends Reader {
             ch.qos.logback.classic.Logger kafkaLogger = (ch.qos.logback.classic.Logger) LoggerFactory.getLogger("org.apache.kafka");
             kafkaLogger.setLevel(Level.WARN);
 
-            // 1. 配置 Debezium
-            // PostgreSQL 逻辑复制槽名称，需要唯一
-            //String slotName = "datax_slot_" + ThreadLocalRandom.current().nextInt(1000, 10001);
-            //String slotName = "datax_slot_1";
-            //String idStr = jobId;;
 
-            // 解析表名（可能是 schema.table 格式）
-//            String schemaName = jdbcInfo.schema;
-//            String tableName = table;
-//            if (table.contains(".")) {
-//                String[] parts = table.split("\\.");
-//                if (parts.length == 2) {
-//                    schemaName = parts[0];
-//                    tableName = parts[1];
-//                }
-//            }
-
-            if (StringUtils.isBlank(jobId) || StringUtils.isBlank(slotName)) {
-                LOG.info("[Debezium] jobId或者slotName未指定jobId = {},slotName = {} 启动失败",jobId,slotName);
+            if (StringUtils.isBlank(jobId) ) {
+                LOG.info("[Debezium] jobId或者slotName未指定jobId = {} 启动失败",jobId);
                 return;
             }
 
-            LOG.info("[Debezium]启动 jobId = {},slotName = {} ",jobId,slotName);
-            
+            LOG.info("[Debezium]启动 jobId = {} ",jobId);
+
             // 检查并创建 ./pg/ 目录
-            File pgDir = new File("./pg");
+            File pgDir = new File("./sqlserver");
             if (!pgDir.exists()) {
                 boolean created = pgDir.mkdirs();
                 if (created) {
-                    LOG.info("Created directory: ./pg/");
+                    LOG.info("Created directory: ./sqlserver/");
                 } else {
-                    LOG.warn("Failed to create directory: ./pg/, will try to continue anyway");
+                    LOG.warn("Failed to create directory: ./sqlserver/, will try to continue anyway");
                 }
             } else {
-                LOG.debug("Directory ./pg/ already exists");
+                LOG.debug("Directory ./sqlserver/ already exists");
             }
-            
-            io.debezium.config.Configuration config = io.debezium.config.Configuration.create()
-                    .with("name", "postgresql-batch-connector-"+jobId)
-                    .with("connector.class", "io.debezium.connector.postgresql.PostgresConnector")
 
-                    // PostgreSQL 连接
+            io.debezium.config.Configuration config = io.debezium.config.Configuration.create()
+                    .with("name", "sqlserver-batch-connector-"+jobId)
+                    .with("connector.class", "io.debezium.connector.sqlserver.SqlServerConnector")
+
+                    // SQL Server 连接配置
                     .with("database.hostname", jdbcInfo.host)
                     .with("database.port", jdbcInfo.port)
                     .with("database.user", username)
                     .with("database.password", password)
                     .with("database.dbname", jdbcInfo.database)
 
-                    // Server 信息
+                    // Server 信息（必需）
                     .with("database.server.id", jobId)
-                    .with("database.server.name", "postgresql-server-" + jobId)
-                    .with("publication.autocreate.mode", "filtered")
+                    .with("database.server.name", "sqlserver-server-" + jobId)
 
-                    // 监听范围
-                    //.with("schema.include.list", schemaName)
-                    //.with("table.include.list", schemaName + "." + tableName)
+                    // 监听范围（格式：schema.table）
                     .with("table.include.list", table)
 
-                    // PostgreSQL 逻辑复制配置
-                    .with("slot.name", slotName)
-                    .with("plugin.name", "pgoutput")  // 使用 pgoutput
 
+                    .with("snapshot.mode", "initial")
 
-                    // offset
+                    // SQL Server 特定配置
+                    // 如果数据库未启用 CDC，可以设置为 "schema_only" 或 "schema_only_recovery"
+                    // .with("snapshot.mode", "schema_only")
+
+                    // offset 存储配置
                     .with("offset.storage", "org.apache.kafka.connect.storage.FileOffsetBackingStore")
-                    .with("offset.storage.file.filename", "./pg/" + jobId + "offsets.dat")
+                    .with("offset.storage.file.filename", "./sqlserver/" + jobId + "offsets.dat")
                     .with("offset.flush.interval.ms", "1000")
 
-                    // schema history
+                    // schema history 配置
                     //.with("database.history", "io.debezium.relational.history.MemoryDatabaseHistory")
-                    .with("database.history", "io.debezium.relational.history.FileDatabaseHistory")
-                    .with("database.history.file.filename", "./pg/" + jobId + "dbhistory.dat")
+                    // 或者使用文件存储
+                     .with("database.history", "io.debezium.relational.history.FileDatabaseHistory")
+                     .with("database.history.file.filename", "./sqlserver/" + jobId + "dbhistory.dat")
 
                     .with("tombstones.on.delete", "false")
-                    .with("snapshot.mode", "initial")
                     .build();
-
 
             System.out.println(config.toString());
 
@@ -571,5 +542,4 @@ public class PostgresqlDebeziumReader extends Reader {
             stopEngine();
         }
     }
-
 }
