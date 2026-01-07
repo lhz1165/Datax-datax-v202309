@@ -371,6 +371,7 @@ public class SqlServerDebeziumReader extends Reader {
 
                     // 监听范围（格式：schema.table）
                     .with("table.include.list", table)
+                    .with("time.precision.mode", "adaptive")
 
 
                     .with("snapshot.mode", "initial")

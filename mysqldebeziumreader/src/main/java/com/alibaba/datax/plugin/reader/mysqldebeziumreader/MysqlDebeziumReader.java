@@ -525,7 +525,6 @@ public class MysqlDebeziumReader extends Reader {
                 case "d":
                     payload = before;
                     record = JdbcUtil.buildRecord(recordSender,payload,configuredColumns, pluginCollector, columnJdbcTypes);
-                    //String deleteSql = DebezimuSqlUtil.buildDeleteSql(totable, before);
                     JdbcUtil.buildRecordWithSql(record, 2);
                     break;
                 default:

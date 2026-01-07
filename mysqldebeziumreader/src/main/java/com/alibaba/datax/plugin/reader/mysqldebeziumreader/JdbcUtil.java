@@ -94,6 +94,7 @@ public class JdbcUtil {
                     /* ===================== DECIMAL / NUMERIC ===================== */
                     case Types.DECIMAL:
                     case Types.NUMERIC:
+                        //org.apache.kafka.connect.data.Decimal
                         if (Decimal.LOGICAL_NAME.equals(schema.name())) {
                             BigDecimal bd = (BigDecimal) value;
                             record.addColumn(new DoubleColumn(bd.doubleValue()));

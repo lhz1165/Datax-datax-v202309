@@ -10,7 +10,7 @@
             "password": "123456",
             "column": [
               "`id`",
-              "`hello1222`"
+              "`booleanvalue`"
             ],
             "splitPk": "",
             "connection": [

@@ -50,8 +50,8 @@ public class JdbcUtil {
             for (String columnName : configuredColumns) {
 
                 String cleanColumnName = columnName;
-                // PostgreSQL 使用双引号，但配置中可能没有引号
-                if (cleanColumnName != null && cleanColumnName.startsWith("\"") && cleanColumnName.endsWith("\"")) {
+                // SqlServer 使用[]，但配置中可能没有[]
+                if (cleanColumnName != null && cleanColumnName.startsWith("[") && cleanColumnName.endsWith("]")) {
                     cleanColumnName = cleanColumnName.substring(1, cleanColumnName.length() - 1);
                 }
                 Field field = struct.schema().field(cleanColumnName);
@@ -186,54 +186,39 @@ public class JdbcUtil {
         return java.sql.Date.valueOf(value.toString());
     }
 
-    // TIME / TIME(6)
+    // TIME (含精度 0~7)
     private static Time parseTime(Object value, Schema schema) {
-        if ("io.debezium.time.Time".equals(schema.name())) {
+        String name = schema.name();
+        if ("io.debezium.time.Time".equals(name)) { // millis of day
             int millis = (Integer) value;
             LocalTime time = LocalTime.ofNanoOfDay((long) millis * 1_000_000);
             return Time.valueOf(time);
         }
 
-        if ("io.debezium.time.MicroTime".equals(schema.name())) {
+        if ("io.debezium.time.MicroTime".equals(name)) { // micros of day
             long micros = (Long) value;
             LocalTime time = LocalTime.ofNanoOfDay(micros * 1_000);
             return Time.valueOf(time);
         }
 
-        // Kafka Connect TIME 类型
-        if ("io.debezium.time.ZonedTime".equals(schema.name())) {
+        if ("io.debezium.time.NanoTime".equals(name)) { // nanos of day
+            long nanos = (Long) value;
+            LocalTime time = LocalTime.ofNanoOfDay(nanos);
+            return Time.valueOf(time);
+        }
+
+        // Kafka Connect TIME with timezone (rare in SQL Server)
+        if ("io.debezium.time.ZonedTime".equals(name)) {
             String time = (String) value;
             OffsetTime offsetTime = OffsetTime.parse(time);
-
             ZonedDateTime zdt = offsetTime
                     .atDate(LocalDate.now())
                     .atZoneSameInstant(ZoneId.of("Asia/Shanghai"));
-
             LocalTime localTime = zdt.toLocalTime();
-
             return Time.valueOf(localTime);
         }
 
-
-//        if ("org.apache.kafka.connect.data.Time".equals(schema.name())) {
-//            if (value instanceof Number) {
-//                long millis = ((Number) value).longValue();
-//                LocalTime time = LocalTime.ofNanoOfDay(millis * 1_000_000);
-//                return java.sql.Time.valueOf(time);
-//            } else if (value instanceof java.util.Date) {
-//                return new java.sql.Time(((java.util.Date) value).getTime());
-//            } else if (value instanceof String) {
-//                // 如果是字符串格式的时间，例如 "10:13:05"
-//                return java.sql.Time.valueOf((String) value);
-//            } else {
-//                throw new IllegalArgumentException("Unsupported value type for Time: " + value.getClass());
-//            }
-//        }
-
-
-
-
-        // fallback: 尝试按毫秒解析
+        // fallback: treat as millis of day
         long longValue = ((Number) value).longValue();
         LocalTime time = LocalTime.ofNanoOfDay(longValue * 1_000_000);
         return Time.valueOf(time);
@@ -243,31 +228,40 @@ public class JdbcUtil {
     public static Timestamp parseTimestamp(Object value, Schema schema) {
         ZoneOffset dbZoneOffset = ZoneOffset.ofHours(8);
         
-        if ("io.debezium.time.Timestamp".equals(schema.name())) {
+        if ("io.debezium.time.Timestamp".equals(schema.name())) { // millis epoch
             long millis = (Long) value;
-            // 直接转为 LocalDateTime，不加任何时区
             return Timestamp.valueOf(LocalDateTime.ofEpochSecond(
                     millis / 1000,
                     (int) ((millis % 1000) * 1_000_000),
-                    ZoneOffset.UTC // 用 UTC 保持原样，不影响数值
+                    ZoneOffset.UTC
             ));
         }
 
-        if ("io.debezium.time.MicroTimestamp".equals(schema.name())) { // TIMESTAMP(6)
+        if ("io.debezium.time.MicroTimestamp".equals(schema.name())) { // micros epoch
             long micros = (Long) value;
             long millisPart = micros / 1000;
             int nanosPart = (int) (micros % 1000) * 1_000; // 微秒转纳秒
             return Timestamp.valueOf(LocalDateTime.ofEpochSecond(
                     millisPart / 1000,
                     (int) ((millisPart % 1000) * 1_000_000) + nanosPart,
-                    ZoneOffset.UTC // 保持原样
+                    ZoneOffset.UTC
             ));
         }
 
-        // PostgreSQL 使用 ZonedTimestamp 表示 TIMESTAMP WITH TIME ZONE
+        if ("io.debezium.time.NanoTimestamp".equals(schema.name())) { // nanos epoch
+            long nanos = (Long) value;
+            long seconds = nanos / 1_000_000_000L;
+            int nanoAdj = (int) (nanos % 1_000_000_000L);
+            return Timestamp.valueOf(LocalDateTime.ofEpochSecond(
+                    seconds,
+                    nanoAdj,
+                    ZoneOffset.UTC
+            ));
+        }
+
+        // TIMESTAMP WITH TIME ZONE（如有）
         if ("io.debezium.time.ZonedTimestamp".equals(schema.name())) {
             OffsetDateTime odt = OffsetDateTime.parse(value.toString());
-            // 转换到指定时区，例如数据库时区
             LocalDateTime ldt = odt.atZoneSameInstant(dbZoneOffset).toLocalDateTime();
             return Timestamp.valueOf(ldt);
         }
@@ -280,7 +274,7 @@ public class JdbcUtil {
                 LocalDateTime ldt = LocalDateTime.ofInstant(instant, dbZoneOffset);
                 return Timestamp.valueOf(ldt);
             } else if (value instanceof java.util.Date) {
-                Instant instant = ((java.util.Date) value).toInstant();//不要时区是对的
+                Instant instant = ((java.util.Date) value).toInstant();
                 LocalDateTime ldt = LocalDateTime.ofInstant(instant, dbZoneOffset);
                 return Timestamp.valueOf(ldt);
             } else if (value instanceof String) {
@@ -308,97 +302,5 @@ public class JdbcUtil {
         return Boolean.parseBoolean(value.toString());
     }
 
-
-    public static String formatStructFieldToStringValue(Object value, Schema schema) {
-        if (value == null) {
-            return "NULL";
-        }
-
-        // ===============================
-        // 1️ Debezium 时间逻辑类型（最优先）
-        // ===============================
-        if (schema != null && schema.name() != null) {
-            switch (schema.name()) {
-
-                // DATE -> Integer (epoch day)
-                case "io.debezium.time.Date": {
-                    int days = (Integer) value;
-                    LocalDate date = LocalDate.ofEpochDay(days);
-                    return "'" + date + "'";
-                }
-                // TIME -> Integer (millis of day)
-                case "io.debezium.time.Time": {   // TIME(0)
-                    int millis = (Integer) value;
-                    LocalTime time = LocalTime.ofNanoOfDay(millis * 1_000_000L);
-                    return "'" + time.format(DateTimeFormatter.ofPattern("HH:mm:ss")) + "'";
-                }
-                case "io.debezium.time.MicroTime": { // TIME(1~6)
-                    long micros = (Long) value;
-                    LocalTime time = LocalTime.ofNanoOfDay(micros * 1_000L);
-                    return "'" + time.format(DateTimeFormatter.ofPattern("HH:mm:ss.SSSSSS")) + "'";
-                }
-                // TIMESTAMP -> ISO-8601 String with offset
-                case "io.debezium.time.ZonedTimestamp": {
-                    OffsetDateTime odt = OffsetDateTime.parse(value.toString());
-                    return "'" + odt.toLocalDateTime()
-                            .format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")) + "'";
-                }
-                // TIMESTAMP -> Long (epoch millis, NO timezone)
-                case "io.debezium.time.Timestamp": {
-                    long millis = (Long) value;
-                    LocalDateTime ldt = LocalDateTime.ofInstant(
-                            Instant.ofEpochMilli(millis),
-                            ZoneId.systemDefault()
-                    );
-                    return "'" + ldt.format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")) + "'";
-                }
-                // TIMESTAMP(1~6) -> Long (epoch micros, NO timezone)
-                case "io.debezium.time.MicroTimestamp": {
-                    long micros = (Long) value;
-                    long seconds = micros / 1_000_000;
-                    long nanos = (micros % 1_000_000) * 1_000;
-
-                    LocalDateTime ldt = LocalDateTime.ofEpochSecond(
-                            seconds,
-                            (int) nanos,
-                            ZoneOffset.UTC   // 注意：这里只是数学换算，不是"时区语义"
-                    );
-
-                    return "'" + ldt.format(
-                            DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss.SSSSSS")
-                    ) + "'";
-                }
-                case Decimal.LOGICAL_NAME: {
-                    BigDecimal bd = (BigDecimal) value;
-                    return bd.toPlainString();
-                }
-            }
-        }
-
-        // ===============================
-        // 2️ 普通字符串
-        // ===============================
-        if (value instanceof String) {
-            String escaped = ((String) value)
-                    .replace("\\", "\\\\")
-                    .replace("'", "''");
-            return "'" + escaped + "'";
-        }
-
-        // ===============================
-        // 3️ 数字 / 布尔
-        // ===============================
-        if (value instanceof Number || value instanceof Boolean) {
-            return value.toString();
-        }
-
-        // ===============================
-        // 4️ 兜底
-        // ===============================
-        String escaped = value.toString()
-                .replace("\\", "\\\\")
-                .replace("'", "''");
-        return "'" + escaped + "'";
-    }
 }
 

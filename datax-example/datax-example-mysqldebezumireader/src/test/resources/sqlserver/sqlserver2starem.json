@@ -10,7 +10,14 @@
             "password": "SqlServer@123",
             "column": [
               "id",
-              "name"
+              "name",
+              "datetime11",
+              "datetime22",
+              "time11",
+              "date11",
+              "moey11",
+              "decimal11",
+              "numberic11"
             ],
             "splitPk": "",
             "connection": [
